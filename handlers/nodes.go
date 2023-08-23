@@ -47,6 +47,14 @@ func (n *Nodes) Post(w http.ResponseWriter, r *http.Request) {
 
 	service := nodes.NewService(n.repo)
 
+	// initializing new saving session
+	err = service.StartSaving()
+	defer service.RollbackSaving()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	// Loop through each part of the request body
 	for {
 		part, err := mr.NextPart()
@@ -67,4 +75,6 @@ func (n *Nodes) Post(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+
+	service.FinishSaving()
 }

@@ -26,10 +26,12 @@ func main() {
 	}
 	defer db.Close()
 
-	// creating nodes repository
-	nr := nodes.NewRepositoryPostgres(db)
+	ctx := context.Background()
 
-	nh := handlers.NewNodes(nr, logger)
+	// creating nodes repository
+	nodesRepo := nodes.NewRepositoryPostgres(db, ctx)
+
+	nh := handlers.NewNodes(nodesRepo, logger)
 
 	r := mux.NewRouter()
 	r.StrictSlash(true)
@@ -66,6 +68,6 @@ func main() {
 
 	// gracefully shutdown the server, waiting for current operations to complete
 	// TODO: get waiting time from some settings store
-	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
-	s.Shutdown(ctx)
+	shutdownCtx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	s.Shutdown(shutdownCtx)
 }

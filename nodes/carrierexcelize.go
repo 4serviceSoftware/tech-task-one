@@ -2,8 +2,8 @@ package nodes
 
 import (
 	"errors"
-	"fmt"
 	"io"
+	"strconv"
 
 	"github.com/xuri/excelize/v2"
 )
@@ -14,7 +14,6 @@ type CarrierExcelize struct {
 
 func NewCarrierExcelize(source io.Reader) (Carrier, error) {
 	f, err := excelize.OpenReader(source)
-	fmt.Println(source)
 	if err != nil {
 		return nil, err
 	}
@@ -49,8 +48,14 @@ func (nc *CarrierExcelize) NextRow() (*Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	n.Id = row[0]
+	n.Id, err = strconv.Atoi(row[0])
+	if err != nil {
+		return nil, err
+	}
 	n.Name = row[1]
-	n.ParentId = row[2]
+	n.ParentId, err = strconv.Atoi(row[2])
+	if err != nil {
+		return nil, err
+	}
 	return &n, nil
 }
