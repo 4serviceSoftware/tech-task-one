@@ -24,6 +24,13 @@ func NewNodes(r nodes.Repository, l *log.Logger) *Nodes {
 
 func (n *Nodes) Get(w http.ResponseWriter, r *http.Request) {
 	n.logger.Println("Getting nodes")
+
+	service := nodes.NewService(n.repo)
+	err := service.WriteJsonNodesTree(w, 0)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 }
 
 func (n *Nodes) Post(w http.ResponseWriter, r *http.Request) {

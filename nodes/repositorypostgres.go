@@ -86,6 +86,35 @@ func (r *RepositoryPostgres) GetNodeParents(id int) ([]*Node, error) {
 	return nodes, nil
 }
 
+func (r *RepositoryPostgres) GetNodeChildren(id int) ([]*Node, error) {
+	query := `SELECT id,name,parent_id 
+				FROM nodes
+				WHERE parent_id=$1
+				ORDER BY id
+				`
+	var rows pgx.Rows
+	var err error
+	if r.tx != nil {
+		rows, err = r.tx.Query(r.ctx, query, id)
+	} else {
+		rows, err = r.conn.Query(r.ctx, query, id)
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var nodes []*Node
+	for rows.Next() {
+		n := Node{}
+		err = rows.Scan(&n.Id, &n.Name, &n.ParentId)
+		if err != nil {
+			return nil, err
+		}
+		nodes = append(nodes, &n)
+	}
+	return nodes, nil
+}
+
 func (r *RepositoryPostgres) StartTransaction() error {
 	var err error
 	r.tx, err = r.conn.Begin(r.ctx)
