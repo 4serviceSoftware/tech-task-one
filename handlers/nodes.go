@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"io"
 	"log"
 	"mime"
@@ -23,27 +24,28 @@ func NewNodes(r nodes.Repository, l *log.Logger) *Nodes {
 }
 
 func (n *Nodes) Get(w http.ResponseWriter, r *http.Request) {
-	n.logger.Println("Getting nodes")
-
-	service := nodes.NewService(n.repo)
-	err := service.WriteJsonNodesTree(w, 0)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	w.Header().Set("Content-Type", "application/json")
+	cache := nodes.NewCache(n.repo)
+	if cache.Get(w) != nil {
+		service := nodes.NewService(n.repo)
+		err := service.WriteJsonNodesTree(w, 0)
+		if err != nil {
+			n.handleBadRequestError(w, err)
+			return
+		}
 	}
 }
 
 func (n *Nodes) Post(w http.ResponseWriter, r *http.Request) {
-	n.logger.Println("Posting nodes")
-
 	_, params, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		n.handleBadRequestError(w, err)
 		return
 	}
 	boundary, ok := params["boundary"]
 	if !ok {
-		http.Error(w, "Not accepted Content-Type. Must be multipart/form-data with boundary.", http.StatusBadRequest)
+		// http.Error(w, "Not accepted Content-Type. Must be multipart/form-data with boundary.", http.StatusBadRequest)
+		n.handleBadRequestError(w, errors.New("Not accepted Content-Type. Must be multipart/form-data with boundary."))
 		return
 	}
 
@@ -58,7 +60,7 @@ func (n *Nodes) Post(w http.ResponseWriter, r *http.Request) {
 	err = service.StartSaving()
 	defer service.RollbackSaving()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		n.handleBadRequestError(w, err)
 		return
 	}
 
@@ -69,7 +71,7 @@ func (n *Nodes) Post(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			n.handleBadRequestError(w, err)
 			return
 		}
 
@@ -77,11 +79,20 @@ func (n *Nodes) Post(w http.ResponseWriter, r *http.Request) {
 		if len(part.FileName()) > 0 {
 			err = service.SaveFromCarrier(part)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				n.handleBadRequestError(w, err)
 				return
 			}
 		}
 	}
 
-	service.FinishSaving()
+	err = service.FinishSaving(n.logger)
+	if err != nil {
+		n.handleBadRequestError(w, err)
+		return
+	}
+}
+
+func (n *Nodes) handleBadRequestError(w http.ResponseWriter, err error) {
+	n.logger.Println(err)
+	http.Error(w, err.Error(), http.StatusBadRequest)
 }

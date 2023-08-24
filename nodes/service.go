@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
+	"log"
 )
 
 type Service struct {
@@ -53,15 +53,26 @@ func (s *Service) StartSaving() error {
 	return nil
 }
 
-func (s *Service) FinishSaving() error {
-	return s.repo.CommitTransaction()
+func (s *Service) FinishSaving(l *log.Logger) error {
+	err := s.repo.CommitTransaction()
+	if err != nil {
+		return err
+	}
+	go func() {
+		cache := NewCache(s.repo)
+		cache.Put()
+		if err != nil {
+			l.Println(err)
+		}
+	}()
+	return nil
 }
 
 func (s *Service) RollbackSaving() error {
 	return s.repo.RollbackTransaction()
 }
 
-func (s *Service) WriteJsonNodesTree(w http.ResponseWriter, id int) error {
+func (s *Service) WriteJsonNodesTree(w io.Writer, id int) error {
 	nodes, err := s.repo.GetNodeChildren(id)
 	if err != nil {
 		return err
