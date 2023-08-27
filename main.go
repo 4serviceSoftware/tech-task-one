@@ -22,7 +22,7 @@ func main() {
 	dbUrl := "postgres://kbnq:root@localhost:5432/techtaskone"
 	db, err := pgxpool.Connect(context.Background(), dbUrl)
 	if err != nil {
-		log.Fatal("DB conn: " + err.Error())
+		logger.Fatal("DB conn: " + err.Error())
 	}
 	defer db.Close()
 
