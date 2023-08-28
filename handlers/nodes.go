@@ -2,37 +2,31 @@ package handlers
 
 import (
 	"errors"
-	"io"
 	"log"
 	"mime"
 	"mime/multipart"
 	"net/http"
 
-	"github.com/4serviceSoftware/tech-task/nodes"
+	"github.com/4serviceSoftware/tech-task/internal/nodes"
 )
 
 type Nodes struct {
-	repo   nodes.Repository
-	logger *log.Logger
+	service *nodes.Service
+	logger  *log.Logger
 }
 
-func NewNodes(r nodes.Repository, l *log.Logger) *Nodes {
+func NewNodes(s *nodes.Service, l *log.Logger) *Nodes {
 	return &Nodes{
-		repo:   r,
-		logger: l,
+		service: s,
+		logger:  l,
 	}
 }
 
 func (n *Nodes) Get(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	cache := nodes.NewCache(n.repo)
-	if cache.Get(w) != nil {
-		service := nodes.NewService(n.repo)
-		err := service.WriteJsonNodesTree(w, 0)
-		if err != nil {
-			n.handleBadRequestError(w, err)
-			return
-		}
+	err := n.service.WriteCachedJsonNodesTree(w)
+	if err != nil {
+		n.handleBadRequestError(w, err)
+		return
 	}
 }
 
@@ -52,40 +46,9 @@ func (n *Nodes) Post(w http.ResponseWriter, r *http.Request) {
 	// TODO: get max bytes limit from config
 	r.Body = http.MaxBytesReader(w, r.Body, 128<<20+1024)
 	// Create a new MultipartReader
-	mr := multipart.NewReader(r.Body, boundary)
+	multipartReader := multipart.NewReader(r.Body, boundary)
 
-	service := nodes.NewService(n.repo)
-
-	// initializing new saving session
-	err = service.StartSaving()
-	defer service.RollbackSaving()
-	if err != nil {
-		n.handleBadRequestError(w, err)
-		return
-	}
-
-	// Loop through each part of the request body
-	for {
-		part, err := mr.NextPart()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			n.handleBadRequestError(w, err)
-			return
-		}
-
-		// if part is a file than handle this part
-		if len(part.FileName()) > 0 {
-			err = service.SaveFromCarrier(part)
-			if err != nil {
-				n.handleBadRequestError(w, err)
-				return
-			}
-		}
-	}
-
-	err = service.FinishSaving(n.logger)
+	err = n.service.SaveFromMultipartReader(multipartReader)
 	if err != nil {
 		n.handleBadRequestError(w, err)
 		return

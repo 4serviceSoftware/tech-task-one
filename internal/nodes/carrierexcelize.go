@@ -5,6 +5,7 @@ import (
 	"io"
 	"strconv"
 
+	"github.com/4serviceSoftware/tech-task/internal/models"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -39,11 +40,11 @@ func NewCarrierExcelize(source io.Reader) (Carrier, error) {
 	return &CarrierExcelize{rows: rows}, nil
 }
 
-func (nc *CarrierExcelize) NextRow() (*Node, error) {
+func (nc *CarrierExcelize) NextNode() (*models.Node, error) {
 	if !nc.rows.Next() {
 		return nil, io.EOF
 	}
-	n := Node{}
+	n := models.Node{}
 	row, err := nc.rows.Columns()
 	if err != nil {
 		return nil, err

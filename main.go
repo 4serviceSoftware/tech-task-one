@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/4serviceSoftware/tech-task/handlers"
-	"github.com/4serviceSoftware/tech-task/nodes"
+	"github.com/4serviceSoftware/tech-task/internal/nodes"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -28,15 +28,17 @@ func main() {
 
 	ctx := context.Background()
 
-	// creating nodes repository
-	nodesRepo := nodes.NewRepositoryPostgres(db, ctx)
+	// creating nodes repository and nodes service
+	nodesRepo := nodes.NewRepositoryPostgres(ctx, db)
+	nodesCachefile := nodes.NewCacheFile("./.cache/nodescache")
+	nodesService := nodes.NewService(nodesRepo, nodesCachefile)
 
-	nh := handlers.NewNodes(nodesRepo, logger)
+	nodesHandlers := handlers.NewNodes(nodesService, logger)
 
 	r := mux.NewRouter()
 	r.StrictSlash(true)
-	r.HandleFunc("/nodes", nh.Get).Methods("GET")
-	r.HandleFunc("/nodes", nh.Post).Methods("POST")
+	r.HandleFunc("/nodes", nodesHandlers.Get).Methods("GET")
+	r.HandleFunc("/nodes", nodesHandlers.Post).Methods("POST")
 	http.Handle("/", r)
 
 	// TODO: get all this server settings from some store

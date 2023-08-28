@@ -3,18 +3,19 @@ package nodes
 import (
 	"context"
 
+	"github.com/4serviceSoftware/tech-task/internal/models"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type RepositoryPostgres struct {
-	conn *pgxpool.Pool
 	ctx  context.Context
+	conn *pgxpool.Pool
 	tx   pgx.Tx
 }
 
-func NewRepositoryPostgres(conn *pgxpool.Pool, ctx context.Context) *RepositoryPostgres {
-	return &RepositoryPostgres{conn: conn, ctx: ctx, tx: nil}
+func NewRepositoryPostgres(ctx context.Context, conn *pgxpool.Pool) *RepositoryPostgres {
+	return &RepositoryPostgres{ctx: ctx, conn: conn, tx: nil}
 }
 
 func (r *RepositoryPostgres) DeleteAllNodes() error {
@@ -28,7 +29,7 @@ func (r *RepositoryPostgres) DeleteAllNodes() error {
 	}
 }
 
-func (r *RepositoryPostgres) SaveNode(n *Node) (int, error) {
+func (r *RepositoryPostgres) SaveNode(n *models.Node) (int, error) {
 	var row pgx.Row
 	query := "INSERT INTO nodes (id, name, parent_id) VALUES ($1, $2, $3) RETURNING id"
 	if r.tx != nil {
@@ -44,7 +45,7 @@ func (r *RepositoryPostgres) SaveNode(n *Node) (int, error) {
 	return id, nil
 }
 
-func (r *RepositoryPostgres) GetNodeParents(id int) ([]*Node, error) {
+func (r *RepositoryPostgres) GetNodeParents(id int) ([]*models.Node, error) {
 	query := `WITH RECURSIVE  Parents
 				AS
 				(
@@ -74,9 +75,9 @@ func (r *RepositoryPostgres) GetNodeParents(id int) ([]*Node, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var nodes []*Node
+	var nodes []*models.Node
 	for rows.Next() {
-		n := Node{}
+		n := models.Node{}
 		err = rows.Scan(&n.Id, &n.Name, &n.ParentId)
 		if err != nil {
 			return nil, err
@@ -86,7 +87,7 @@ func (r *RepositoryPostgres) GetNodeParents(id int) ([]*Node, error) {
 	return nodes, nil
 }
 
-func (r *RepositoryPostgres) GetNodeChildren(id int) ([]*Node, error) {
+func (r *RepositoryPostgres) GetNodeChildren(id int) ([]*models.Node, error) {
 	query := `SELECT id,name,parent_id 
 				FROM nodes
 				WHERE parent_id=$1
@@ -103,9 +104,9 @@ func (r *RepositoryPostgres) GetNodeChildren(id int) ([]*Node, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var nodes []*Node
+	var nodes []*models.Node
 	for rows.Next() {
-		n := Node{}
+		n := models.Node{}
 		err = rows.Scan(&n.Id, &n.Name, &n.ParentId)
 		if err != nil {
 			return nil, err

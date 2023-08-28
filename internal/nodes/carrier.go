@@ -1,9 +1,13 @@
 package nodes
 
-import "io"
+import (
+	"io"
+
+	"github.com/4serviceSoftware/tech-task/internal/models"
+)
 
 type Carrier interface {
-	NextRow() (*Node, error)
+	NextNode() (*models.Node, error)
 }
 
 func NewCarrier(source io.Reader) (Carrier, error) {

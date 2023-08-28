@@ -13,7 +13,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/4serviceSoftware/tech-task/nodes"
+	"github.com/4serviceSoftware/tech-task/internal/nodes"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -30,9 +30,11 @@ func TestPostPositive(t *testing.T) {
 	ctx := context.Background()
 
 	// creating nodes repository
-	nodesRepo := nodes.NewRepositoryPostgres(db, ctx)
+	nodesRepo := nodes.NewRepositoryPostgres(ctx, db)
+	nodesCachefile := nodes.NewCacheFile("./.cache/nodescachetest")
+	nodesService := nodes.NewService(nodesRepo, nodesCachefile)
 
-	nh := NewNodes(nodesRepo, logger)
+	nodesHandlers := NewNodes(nodesService, logger)
 
 	// Create a request to pass to our handler.
 	body := new(bytes.Buffer)
@@ -65,7 +67,7 @@ func TestPostPositive(t *testing.T) {
 	}
 	// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(nh.Post)
+	handler := http.HandlerFunc(nodesHandlers.Post)
 	// Our handlers satisfy http.Handler, so we can call their ServeHTTP method
 	// directly and pass in our Request and ResponseRecorder.
 	handler.ServeHTTP(rr, req)
@@ -89,9 +91,11 @@ func TestPostNegative(t *testing.T) {
 	ctx := context.Background()
 
 	// creating nodes repository
-	nodesRepo := nodes.NewRepositoryPostgres(db, ctx)
+	nodesRepo := nodes.NewRepositoryPostgres(ctx, db)
+	nodesCachefile := nodes.NewCacheFile("./.cache/nodescachetest")
+	nodesService := nodes.NewService(nodesRepo, nodesCachefile)
 
-	nh := NewNodes(nodesRepo, logger)
+	nodesHandlers := NewNodes(nodesService, logger)
 
 	// Create a request to pass to our handler.
 	body := new(bytes.Buffer)
@@ -124,7 +128,7 @@ func TestPostNegative(t *testing.T) {
 	}
 	// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(nh.Post)
+	handler := http.HandlerFunc(nodesHandlers.Post)
 	// Our handlers satisfy http.Handler, so we can call their ServeHTTP method
 	// directly and pass in our Request and ResponseRecorder.
 	handler.ServeHTTP(rr, req)
@@ -148,9 +152,11 @@ func TestGet(t *testing.T) {
 	ctx := context.Background()
 
 	// creating nodes repository
-	nodesRepo := nodes.NewRepositoryPostgres(db, ctx)
+	nodesRepo := nodes.NewRepositoryPostgres(ctx, db)
+	nodesCachefile := nodes.NewCacheFile("./.cache/nodescachetest")
+	nodesService := nodes.NewService(nodesRepo, nodesCachefile)
 
-	nh := NewNodes(nodesRepo, logger)
+	nodesHandlers := NewNodes(nodesService, logger)
 
 	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
 	// pass 'nil' as the third parameter.
@@ -160,7 +166,7 @@ func TestGet(t *testing.T) {
 	}
 	// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(nh.Get)
+	handler := http.HandlerFunc(nodesHandlers.Get)
 	// Our handlers satisfy http.Handler, so we can call their ServeHTTP method
 	// directly and pass in our Request and ResponseRecorder.
 	handler.ServeHTTP(rr, req)
