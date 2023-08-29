@@ -10,9 +10,9 @@ import (
 
 	"github.com/4serviceSoftware/tech-task/handlers"
 	"github.com/4serviceSoftware/tech-task/internal/config"
+	"github.com/4serviceSoftware/tech-task/internal/db"
 	"github.com/4serviceSoftware/tech-task/internal/nodes"
 	"github.com/gorilla/mux"
-	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 func main() {
@@ -26,15 +26,14 @@ func main() {
 	}
 
 	// getting main database connetcion
-	dbUrl := "postgres://" + config.DbUser + ":" + config.DbPass + "@" + config.DbHost + ":" + config.DbPort + "/" + config.DbName
-	db, err := pgxpool.Connect(context.Background(), dbUrl)
+	dbConn, err := db.GetPostgresConnection(ctx, config)
 	if err != nil {
 		logger.Fatal("DB conn: " + err.Error())
 	}
-	defer db.Close()
+	defer dbConn.Close()
 
 	// creating nodes repository, nodes cashe and nodes service
-	nodesRepo := nodes.NewRepositoryPostgres(ctx, db)
+	nodesRepo := nodes.NewRepositoryPostgres(ctx, dbConn)
 	nodesCachefile := nodes.NewCacheFile(config.NodesCacheFilename)
 	nodesService := nodes.NewService(nodesRepo, nodesCachefile)
 

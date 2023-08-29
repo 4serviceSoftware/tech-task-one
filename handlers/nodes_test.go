@@ -14,8 +14,8 @@ import (
 	"testing"
 
 	"github.com/4serviceSoftware/tech-task/internal/config"
+	"github.com/4serviceSoftware/tech-task/internal/db"
 	"github.com/4serviceSoftware/tech-task/internal/nodes"
-	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 func TestPostPositive(t *testing.T) {
@@ -28,16 +28,15 @@ func TestPostPositive(t *testing.T) {
 		t.Fatal("Config loading fail: " + err.Error())
 	}
 
-	dbUrl := "postgres://kbnq:root@localhost:5432/techtaskone_test"
-	db, err := pgxpool.Connect(context.Background(), dbUrl)
+	dbConn, err := db.GetPostgresConnection(ctx, config)
 	if err != nil {
-		t.Fatal("DB conn: " + err.Error())
+		logger.Fatal("DB conn: " + err.Error())
 	}
-	defer db.Close()
+	defer dbConn.Close()
 
 	// creating nodes repository, cachefile and service
-	nodesRepo := nodes.NewRepositoryPostgres(ctx, db)
-	nodesCachefile := nodes.NewCacheFile("./.cache/nodescachetest")
+	nodesRepo := nodes.NewRepositoryPostgres(ctx, dbConn)
+	nodesCachefile := nodes.NewCacheFile(config.NodesCacheFilename)
 	nodesService := nodes.NewService(nodesRepo, nodesCachefile)
 
 	nodesHandlers := NewNodes(nodesService, logger, config)
@@ -94,16 +93,15 @@ func TestPostNegative(t *testing.T) {
 		t.Fatal("Config loading fail: " + err.Error())
 	}
 
-	dbUrl := "postgres://kbnq:root@localhost:5432/techtaskone_test"
-	db, err := pgxpool.Connect(context.Background(), dbUrl)
+	dbConn, err := db.GetPostgresConnection(ctx, config)
 	if err != nil {
-		t.Fatal("DB conn: " + err.Error())
+		logger.Fatal("DB conn: " + err.Error())
 	}
-	defer db.Close()
+	defer dbConn.Close()
 
-	// creating nodes repository
-	nodesRepo := nodes.NewRepositoryPostgres(ctx, db)
-	nodesCachefile := nodes.NewCacheFile("./.cache/nodescachetest")
+	// creating nodes repository, cachefile and service
+	nodesRepo := nodes.NewRepositoryPostgres(ctx, dbConn)
+	nodesCachefile := nodes.NewCacheFile(config.NodesCacheFilename)
 	nodesService := nodes.NewService(nodesRepo, nodesCachefile)
 
 	nodesHandlers := NewNodes(nodesService, logger, config)
@@ -160,16 +158,15 @@ func TestGet(t *testing.T) {
 		t.Fatal("Config loading fail: " + err.Error())
 	}
 
-	dbUrl := "postgres://kbnq:root@localhost:5432/techtaskone_test"
-	db, err := pgxpool.Connect(context.Background(), dbUrl)
+	dbConn, err := db.GetPostgresConnection(ctx, config)
 	if err != nil {
-		t.Fatal("DB conn: " + err.Error())
+		logger.Fatal("DB conn: " + err.Error())
 	}
-	defer db.Close()
+	defer dbConn.Close()
 
-	// creating nodes repository
-	nodesRepo := nodes.NewRepositoryPostgres(ctx, db)
-	nodesCachefile := nodes.NewCacheFile("./.cache/nodescachetest")
+	// creating nodes repository, cachefile and service
+	nodesRepo := nodes.NewRepositoryPostgres(ctx, dbConn)
+	nodesCachefile := nodes.NewCacheFile(config.NodesCacheFilename)
 	nodesService := nodes.NewService(nodesRepo, nodesCachefile)
 
 	nodesHandlers := NewNodes(nodesService, logger, config)
