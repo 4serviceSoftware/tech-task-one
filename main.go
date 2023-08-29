@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/4serviceSoftware/tech-task/handlers"
+	"github.com/4serviceSoftware/tech-task/internal/config"
 	"github.com/4serviceSoftware/tech-task/internal/nodes"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -17,41 +18,45 @@ import (
 func main() {
 	logger := log.New(os.Stdout, "tech-task-one ", log.LstdFlags)
 
+	ctx := context.Background()
+
+	config, err := config.GetFromEnv(ctx)
+	if err != nil {
+		logger.Fatal("Config loading fail: " + err.Error())
+	}
+
 	// getting main database connetcion
-	// TODO: get db credentials from config
-	dbUrl := "postgres://kbnq:root@localhost:5432/techtaskone"
+	dbUrl := "postgres://" + config.DbUser + ":" + config.DbPass + "@" + config.DbHost + ":" + config.DbPort + "/" + config.DbName
 	db, err := pgxpool.Connect(context.Background(), dbUrl)
 	if err != nil {
 		logger.Fatal("DB conn: " + err.Error())
 	}
 	defer db.Close()
 
-	ctx := context.Background()
-
-	// creating nodes repository and nodes service
+	// creating nodes repository, nodes cashe and nodes service
 	nodesRepo := nodes.NewRepositoryPostgres(ctx, db)
-	nodesCachefile := nodes.NewCacheFile("./.cache/nodescache")
+	nodesCachefile := nodes.NewCacheFile(config.NodesCacheFilename)
 	nodesService := nodes.NewService(nodesRepo, nodesCachefile)
 
-	nodesHandlers := handlers.NewNodes(nodesService, logger)
+	nodesHandlers := handlers.NewNodes(nodesService, logger, config)
 
 	r := mux.NewRouter()
 	r.StrictSlash(true)
-	r.HandleFunc("/nodes", nodesHandlers.Get).Methods("GET")
-	r.HandleFunc("/nodes", nodesHandlers.Post).Methods("POST")
+	r.HandleFunc("/nodes", nodesHandlers.Get).Methods(http.MethodGet)
+	r.HandleFunc("/nodes", nodesHandlers.Post).Methods(http.MethodPost)
 	http.Handle("/", r)
 
-	// TODO: get all this server settings from some store
 	s := &http.Server{
-		Addr:         ":8080",
+		Addr:         ":" + config.ServerPort,
 		Handler:      r,
-		IdleTimeout:  30 * time.Second,
-		ReadTimeout:  10 * time.Minute,
-		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  config.ServerIdleTimeout * time.Second,
+		ReadTimeout:  config.ServerReadTimeout * time.Minute,
+		WriteTimeout: config.ServerWriteTimeout * time.Second,
 	}
 
 	// start the server
 	go func() {
+		logger.Printf("Starting server at addr %s...\n", s.Addr)
 		err := s.ListenAndServe()
 		if err != nil {
 			logger.Printf("Error starting server: %s\n", err)
@@ -70,6 +75,6 @@ func main() {
 
 	// gracefully shutdown the server, waiting for current operations to complete
 	// TODO: get waiting time from some settings store
-	shutdownCtx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	shutdownCtx, _ := context.WithTimeout(context.Background(), config.ServerShutdownTimeout*time.Second)
 	s.Shutdown(shutdownCtx)
 }

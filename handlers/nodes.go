@@ -7,18 +7,21 @@ import (
 	"mime/multipart"
 	"net/http"
 
+	"github.com/4serviceSoftware/tech-task/internal/config"
 	"github.com/4serviceSoftware/tech-task/internal/nodes"
 )
 
 type Nodes struct {
 	service *nodes.Service
 	logger  *log.Logger
+	config  *config.Config
 }
 
-func NewNodes(s *nodes.Service, l *log.Logger) *Nodes {
+func NewNodes(service *nodes.Service, logger *log.Logger, config *config.Config) *Nodes {
 	return &Nodes{
-		service: s,
-		logger:  l,
+		service: service,
+		logger:  logger,
+		config:  config,
 	}
 }
 
@@ -38,13 +41,11 @@ func (n *Nodes) Post(w http.ResponseWriter, r *http.Request) {
 	}
 	boundary, ok := params["boundary"]
 	if !ok {
-		// http.Error(w, "Not accepted Content-Type. Must be multipart/form-data with boundary.", http.StatusBadRequest)
 		n.handleBadRequestError(w, errors.New("Not accepted Content-Type. Must be multipart/form-data with boundary."))
 		return
 	}
 
-	// TODO: get max bytes limit from config
-	r.Body = http.MaxBytesReader(w, r.Body, 128<<20+1024)
+	r.Body = http.MaxBytesReader(w, r.Body, int64(n.config.ServerMaxUploadSize)<<20+1024)
 	// Create a new MultipartReader
 	multipartReader := multipart.NewReader(r.Body, boundary)
 

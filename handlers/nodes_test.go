@@ -13,12 +13,20 @@ import (
 	"os"
 	"testing"
 
+	"github.com/4serviceSoftware/tech-task/internal/config"
 	"github.com/4serviceSoftware/tech-task/internal/nodes"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 func TestPostPositive(t *testing.T) {
 	logger := log.New(os.Stdout, "tech-task-one-test", log.LstdFlags)
+
+	ctx := context.Background()
+
+	config, err := config.GetFromEnv(ctx)
+	if err != nil {
+		t.Fatal("Config loading fail: " + err.Error())
+	}
 
 	dbUrl := "postgres://kbnq:root@localhost:5432/techtaskone_test"
 	db, err := pgxpool.Connect(context.Background(), dbUrl)
@@ -27,14 +35,12 @@ func TestPostPositive(t *testing.T) {
 	}
 	defer db.Close()
 
-	ctx := context.Background()
-
-	// creating nodes repository
+	// creating nodes repository, cachefile and service
 	nodesRepo := nodes.NewRepositoryPostgres(ctx, db)
 	nodesCachefile := nodes.NewCacheFile("./.cache/nodescachetest")
 	nodesService := nodes.NewService(nodesRepo, nodesCachefile)
 
-	nodesHandlers := NewNodes(nodesService, logger)
+	nodesHandlers := NewNodes(nodesService, logger, config)
 
 	// Create a request to pass to our handler.
 	body := new(bytes.Buffer)
@@ -81,6 +87,13 @@ func TestPostPositive(t *testing.T) {
 func TestPostNegative(t *testing.T) {
 	logger := log.New(os.Stdout, "tech-task-one-test", log.LstdFlags)
 
+	ctx := context.Background()
+
+	config, err := config.GetFromEnv(ctx)
+	if err != nil {
+		t.Fatal("Config loading fail: " + err.Error())
+	}
+
 	dbUrl := "postgres://kbnq:root@localhost:5432/techtaskone_test"
 	db, err := pgxpool.Connect(context.Background(), dbUrl)
 	if err != nil {
@@ -88,14 +101,12 @@ func TestPostNegative(t *testing.T) {
 	}
 	defer db.Close()
 
-	ctx := context.Background()
-
 	// creating nodes repository
 	nodesRepo := nodes.NewRepositoryPostgres(ctx, db)
 	nodesCachefile := nodes.NewCacheFile("./.cache/nodescachetest")
 	nodesService := nodes.NewService(nodesRepo, nodesCachefile)
 
-	nodesHandlers := NewNodes(nodesService, logger)
+	nodesHandlers := NewNodes(nodesService, logger, config)
 
 	// Create a request to pass to our handler.
 	body := new(bytes.Buffer)
@@ -142,6 +153,13 @@ func TestPostNegative(t *testing.T) {
 func TestGet(t *testing.T) {
 	logger := log.New(os.Stdout, "tech-task-one-test", log.LstdFlags)
 
+	ctx := context.Background()
+
+	config, err := config.GetFromEnv(ctx)
+	if err != nil {
+		t.Fatal("Config loading fail: " + err.Error())
+	}
+
 	dbUrl := "postgres://kbnq:root@localhost:5432/techtaskone_test"
 	db, err := pgxpool.Connect(context.Background(), dbUrl)
 	if err != nil {
@@ -149,14 +167,12 @@ func TestGet(t *testing.T) {
 	}
 	defer db.Close()
 
-	ctx := context.Background()
-
 	// creating nodes repository
 	nodesRepo := nodes.NewRepositoryPostgres(ctx, db)
 	nodesCachefile := nodes.NewCacheFile("./.cache/nodescachetest")
 	nodesService := nodes.NewService(nodesRepo, nodesCachefile)
 
-	nodesHandlers := NewNodes(nodesService, logger)
+	nodesHandlers := NewNodes(nodesService, logger, config)
 
 	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
 	// pass 'nil' as the third parameter.
