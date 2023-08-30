@@ -8,10 +8,12 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/4serviceSoftware/tech-task/config"
+	"github.com/4serviceSoftware/tech-task/db"
 	"github.com/4serviceSoftware/tech-task/handlers"
-	"github.com/4serviceSoftware/tech-task/internal/config"
-	"github.com/4serviceSoftware/tech-task/internal/db"
 	"github.com/4serviceSoftware/tech-task/internal/nodes"
+	"github.com/4serviceSoftware/tech-task/internal/nodes/cachefile"
+	"github.com/4serviceSoftware/tech-task/internal/repos"
 	"github.com/gorilla/mux"
 )
 
@@ -33,8 +35,8 @@ func main() {
 	defer dbConn.Close()
 
 	// creating nodes repository, nodes cashe and nodes service
-	nodesRepo := nodes.NewRepositoryPostgres(ctx, dbConn)
-	nodesCachefile := nodes.NewCacheFile(config.NodesCacheFilename)
+	nodesRepo := repos.NewNodesRepositoryPostgres(ctx, dbConn)
+	nodesCachefile := cachefile.NewCacheFile(config.NodesCacheFilename)
 	nodesService := nodes.NewService(nodesRepo, nodesCachefile)
 
 	nodesHandlers := handlers.NewNodes(nodesService, logger, config)

@@ -7,14 +7,17 @@ import (
 	"mime/multipart"
 
 	"github.com/4serviceSoftware/tech-task/internal/models"
+	"github.com/4serviceSoftware/tech-task/internal/nodes/cachefile"
+	"github.com/4serviceSoftware/tech-task/internal/nodes/carrier"
+	"github.com/4serviceSoftware/tech-task/internal/repos"
 )
 
 type Service struct {
-	repo      Repository
-	cacheFile *CacheFile
+	repo      repos.NodesRepository
+	cacheFile *cachefile.CacheFile
 }
 
-func NewService(repo Repository, cacheFile *CacheFile) *Service {
+func NewService(repo repos.NodesRepository, cacheFile *cachefile.CacheFile) *Service {
 	return &Service{repo: repo, cacheFile: cacheFile}
 }
 
@@ -76,7 +79,7 @@ func (s *Service) WriteCachedJsonNodesTree(w io.Writer) error {
 // reads nodes from it, checks for errors and saves to repository
 // Returns error or nil
 func (s *Service) saveFromCarrier(r io.Reader) error {
-	carrier, err := NewCarrier(r)
+	carrier, err := carrier.NewCarrier(r)
 	if err != nil {
 		return err
 	}

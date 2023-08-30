@@ -13,9 +13,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/4serviceSoftware/tech-task/internal/config"
-	"github.com/4serviceSoftware/tech-task/internal/db"
+	"github.com/4serviceSoftware/tech-task/config"
+	"github.com/4serviceSoftware/tech-task/db"
 	"github.com/4serviceSoftware/tech-task/internal/nodes"
+	"github.com/4serviceSoftware/tech-task/internal/nodes/cachefile"
+	"github.com/4serviceSoftware/tech-task/internal/repos"
 )
 
 func TestPostPositive(t *testing.T) {
@@ -35,8 +37,8 @@ func TestPostPositive(t *testing.T) {
 	defer dbConn.Close()
 
 	// creating nodes repository, cachefile and service
-	nodesRepo := nodes.NewRepositoryPostgres(ctx, dbConn)
-	nodesCachefile := nodes.NewCacheFile(config.NodesCacheFilename)
+	nodesRepo := repos.NewNodesRepositoryPostgres(ctx, dbConn)
+	nodesCachefile := cachefile.NewCacheFile(config.NodesCacheFilename)
 	nodesService := nodes.NewService(nodesRepo, nodesCachefile)
 
 	nodesHandlers := NewNodes(nodesService, logger, config)
@@ -100,8 +102,8 @@ func TestPostNegative(t *testing.T) {
 	defer dbConn.Close()
 
 	// creating nodes repository, cachefile and service
-	nodesRepo := nodes.NewRepositoryPostgres(ctx, dbConn)
-	nodesCachefile := nodes.NewCacheFile(config.NodesCacheFilename)
+	nodesRepo := repos.NewNodesRepositoryPostgres(ctx, dbConn)
+	nodesCachefile := cachefile.NewCacheFile(config.NodesCacheFilename)
 	nodesService := nodes.NewService(nodesRepo, nodesCachefile)
 
 	nodesHandlers := NewNodes(nodesService, logger, config)
@@ -165,8 +167,8 @@ func TestGet(t *testing.T) {
 	defer dbConn.Close()
 
 	// creating nodes repository, cachefile and service
-	nodesRepo := nodes.NewRepositoryPostgres(ctx, dbConn)
-	nodesCachefile := nodes.NewCacheFile(config.NodesCacheFilename)
+	nodesRepo := repos.NewNodesRepositoryPostgres(ctx, dbConn)
+	nodesCachefile := cachefile.NewCacheFile(config.NodesCacheFilename)
 	nodesService := nodes.NewService(nodesRepo, nodesCachefile)
 
 	nodesHandlers := NewNodes(nodesService, logger, config)

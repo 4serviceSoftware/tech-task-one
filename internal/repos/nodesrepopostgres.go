@@ -1,4 +1,4 @@
-package nodes
+package repos
 
 import (
 	"context"
@@ -8,17 +8,17 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-type RepositoryPostgres struct {
+type NodesRepositoryPostgres struct {
 	ctx  context.Context
 	conn *pgxpool.Pool
 	tx   pgx.Tx
 }
 
-func NewRepositoryPostgres(ctx context.Context, conn *pgxpool.Pool) *RepositoryPostgres {
-	return &RepositoryPostgres{ctx: ctx, conn: conn, tx: nil}
+func NewNodesRepositoryPostgres(ctx context.Context, conn *pgxpool.Pool) *NodesRepositoryPostgres {
+	return &NodesRepositoryPostgres{ctx: ctx, conn: conn, tx: nil}
 }
 
-func (r *RepositoryPostgres) DeleteAllNodes() error {
+func (r *NodesRepositoryPostgres) DeleteAllNodes() error {
 	if r.tx != nil {
 
 		_, err := r.tx.Exec(r.ctx, "DELETE FROM nodes")
@@ -29,7 +29,7 @@ func (r *RepositoryPostgres) DeleteAllNodes() error {
 	}
 }
 
-func (r *RepositoryPostgres) SaveNode(n *models.Node) (int, error) {
+func (r *NodesRepositoryPostgres) SaveNode(n *models.Node) (int, error) {
 	var row pgx.Row
 	query := "INSERT INTO nodes (id, name, parent_id) VALUES ($1, $2, $3) RETURNING id"
 	if r.tx != nil {
@@ -45,7 +45,7 @@ func (r *RepositoryPostgres) SaveNode(n *models.Node) (int, error) {
 	return id, nil
 }
 
-func (r *RepositoryPostgres) GetNodeParents(id int) ([]*models.Node, error) {
+func (r *NodesRepositoryPostgres) GetNodeParents(id int) ([]*models.Node, error) {
 	query := `WITH RECURSIVE  Parents
 				AS
 				(
@@ -87,7 +87,7 @@ func (r *RepositoryPostgres) GetNodeParents(id int) ([]*models.Node, error) {
 	return nodes, nil
 }
 
-func (r *RepositoryPostgres) GetNodeChildren(id int) ([]*models.Node, error) {
+func (r *NodesRepositoryPostgres) GetNodeChildren(id int) ([]*models.Node, error) {
 	query := `SELECT id,name,parent_id 
 				FROM nodes
 				WHERE parent_id=$1
@@ -116,7 +116,7 @@ func (r *RepositoryPostgres) GetNodeChildren(id int) ([]*models.Node, error) {
 	return nodes, nil
 }
 
-func (r *RepositoryPostgres) StartTransaction() error {
+func (r *NodesRepositoryPostgres) StartTransaction() error {
 	var err error
 	r.tx, err = r.conn.Begin(r.ctx)
 	if err != nil {
@@ -126,7 +126,7 @@ func (r *RepositoryPostgres) StartTransaction() error {
 	return nil
 }
 
-func (r *RepositoryPostgres) CommitTransaction() error {
+func (r *NodesRepositoryPostgres) CommitTransaction() error {
 	if r.tx != nil {
 		err := r.tx.Commit(r.ctx)
 		r.tx = nil
@@ -135,7 +135,7 @@ func (r *RepositoryPostgres) CommitTransaction() error {
 	return nil
 }
 
-func (r *RepositoryPostgres) RollbackTransaction() error {
+func (r *NodesRepositoryPostgres) RollbackTransaction() error {
 	if r.tx != nil {
 		err := r.tx.Rollback(r.ctx)
 		r.tx = nil

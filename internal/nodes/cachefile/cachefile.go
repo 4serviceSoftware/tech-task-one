@@ -1,4 +1,4 @@
-package nodes
+package cachefile
 
 import (
 	"errors"

@@ -7,7 +7,7 @@ import (
 	"mime/multipart"
 	"net/http"
 
-	"github.com/4serviceSoftware/tech-task/internal/config"
+	"github.com/4serviceSoftware/tech-task/config"
 	"github.com/4serviceSoftware/tech-task/internal/nodes"
 )
 

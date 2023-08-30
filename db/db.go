@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 
-	"github.com/4serviceSoftware/tech-task/internal/config"
+	"github.com/4serviceSoftware/tech-task/config"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
