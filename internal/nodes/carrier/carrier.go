@@ -1,3 +1,6 @@
+// This is interface of carrier.
+// Carrier is a concrete form of incoming data. For this project carrier is a xlsx file.
+// This interface contains only one method - NextNode()
 package carrier
 
 import (
@@ -7,6 +10,7 @@ import (
 )
 
 type Carrier interface {
+	// NextNode reads next node from carrier
 	NextNode() (*models.Node, error)
 }
 

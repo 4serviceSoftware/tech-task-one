@@ -1,3 +1,8 @@
+// Application loads config from environment variables. You must set all
+// needed environment variables before lounch. I use 'gorun' file in project root
+// for starting this application. You can see sample of this file in 'gorun.sample'.
+// It contains set of needed environment variables. You must fill your database
+// credentials and save a file as 'gorun'.
 package main
 
 import (
@@ -75,7 +80,6 @@ func main() {
 	logger.Println("Got signal:", sig)
 
 	// gracefully shutdown the server, waiting for current operations to complete
-	// TODO: get waiting time from some settings store
 	shutdownCtx, _ := context.WithTimeout(context.Background(), config.ServerShutdownTimeout*time.Second)
 	s.Shutdown(shutdownCtx)
 }

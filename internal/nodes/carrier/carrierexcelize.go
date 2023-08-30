@@ -1,3 +1,4 @@
+// Implementation of Carrier interface for .xlsx files which uses package excelize.
 package carrier
 
 import (
