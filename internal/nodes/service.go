@@ -18,6 +18,9 @@ func NewService(repo Repository, cacheFile *CacheFile) *Service {
 	return &Service{repo: repo, cacheFile: cacheFile}
 }
 
+// SaveFromMultipartReader takes multipart.Reader, reads parts (files) from it
+// and calls saveFromCarrier() method to process this parts.
+// Returns an error or nil.
 func (s *Service) SaveFromMultipartReader(multipartReader *multipart.Reader) error {
 	// initializing new saving session
 	err := s.startSaving()
@@ -52,6 +55,11 @@ func (s *Service) SaveFromMultipartReader(multipartReader *multipart.Reader) err
 	return nil
 }
 
+// WriteCachedJsonNodesTree checks if response is stored in cache file or
+// it needs to be generated. In any case responce is writing to a givan io.Writer
+// directly without storing responce in a memory.
+// Response is a json formatted nodes tree.
+// Returns error or nil
 func (s *Service) WriteCachedJsonNodesTree(w io.Writer) error {
 	cacheFile, err := s.cacheFile.GetFileReader()
 	if err != nil {
@@ -64,20 +72,23 @@ func (s *Service) WriteCachedJsonNodesTree(w io.Writer) error {
 	return nil
 }
 
+// saveFromCarrier takes io.Reader as a handler of file with stored nodes (carrier),
+// reads nodes from it, checks for errors and saves to repository
+// Returns error or nil
 func (s *Service) saveFromCarrier(r io.Reader) error {
-	c, err := NewCarrier(r)
+	carrier, err := NewCarrier(r)
 	if err != nil {
 		return err
 	}
 	for {
-		node, err := c.NextNode()
+		node, err := carrier.NextNode()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
 			return err
 		}
-
+		// check nodes parents chain for circular references
 		err = s.checkNodeCircularRef(node)
 		if err != nil {
 			return err
@@ -90,6 +101,9 @@ func (s *Service) saveFromCarrier(r io.Reader) error {
 	return nil
 }
 
+// writeJsonNodesTree builds a json formatted nodes tree and writes it
+// to a given io.Writer directly
+// Returns error or nil
 func (s *Service) writeJsonNodesTree(w io.Writer, id int) error {
 	nodes, err := s.repo.GetNodeChildren(id)
 	if err != nil {
@@ -112,6 +126,7 @@ func (s *Service) writeJsonNodesTree(w io.Writer, id int) error {
 	return nil
 }
 
+// checkNodeCircularRef checks node parents chain for circular references
 func (s *Service) checkNodeCircularRef(node *models.Node) error {
 	// checking this node for circular dependency in parents
 	parents, err := s.repo.GetNodeParents(node.ParentId)
@@ -127,6 +142,8 @@ func (s *Service) checkNodeCircularRef(node *models.Node) error {
 	return nil
 }
 
+// startSaving does a preparations before saving all nodes tree to repository.
+// It starts a transaction and clears all previous nodes
 func (s *Service) startSaving() error {
 	err := s.repo.StartTransaction()
 	if err != nil {
@@ -139,11 +156,14 @@ func (s *Service) startSaving() error {
 	return nil
 }
 
+// finishSaving does all needed work after saving all nodes tree to repository.
+// It commits a transaction and refreshes cache file
 func (s *Service) finishSaving() error {
 	err := s.repo.CommitTransaction()
 	if err != nil {
 		return err
 	}
+	// refresh cache file in parallel
 	go func() {
 		cacheFileWriter, closeFileFunc, err := s.cacheFile.GetNewFileWriter()
 		if err != nil {
@@ -155,6 +175,8 @@ func (s *Service) finishSaving() error {
 	return nil
 }
 
+// finishSaving does rollback for saving nodes tree session
+// in case of an error in the middle of saving session.
 func (s *Service) rollbackSaving() error {
 	return s.repo.RollbackTransaction()
 }
