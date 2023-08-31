@@ -1,0 +1,7 @@
+.DS_Store
+.cache
+gorun
+goruntest
+pg_data
+pg_data_test
+.env
